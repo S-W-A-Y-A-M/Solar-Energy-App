@@ -23,14 +23,14 @@ const Card = ({ title, children }) => (
   </div>
 );
 
-const EnergyTracker = () => {
-  const [energyData, setEnergyData] = useState([]);
+const EnergyTracker = ({ setEnergyData, energyData }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setEnergyData((prevData) => [...prevData.slice(-20), { time: new Date().toLocaleTimeString(), energy: Math.random() * 100 }]);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [setEnergyData]);
+
   return (
     <Card title="Real-Time Energy Consumption">
       <ResponsiveContainer width="100%" height={300}>
@@ -46,17 +46,16 @@ const EnergyTracker = () => {
   );
 };
 
-const Maintenance = () => {
+const Maintenance = ({ energyData }) => {
   const [maintenanceStatus, setMaintenanceStatus] = useState("All systems operational");
-
   useEffect(() => {
     const interval = setInterval(() => {
-      const performance = Math.random();
-      if (performance < 0.2) setMaintenanceStatus("Performance Degradation Detected!");
+      const performance = energyData.length ? energyData.at(-1).energy : Math.random();
+      if (performance < 20) setMaintenanceStatus("Performance Degradation Detected!");
       else setMaintenanceStatus("All systems operational");
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [energyData]);
 
   return (
     <Card title="Predictive Maintenance">
@@ -65,14 +64,12 @@ const Maintenance = () => {
   );
 };
 
-const ImpactVisualizer = () => {
+const ImpactVisualizer = ({ energyData }) => {
   const [impactData, setImpactData] = useState([]);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setImpactData((prevData) => [...prevData.slice(-20), { time: new Date().toLocaleTimeString(), impact: Math.random() * 10 }]);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    setImpactData(energyData.map(({ time, energy }) => ({ time, impact: energy * 0.1 })));
+  }, [energyData]);
+
   return (
     <Card title="Environmental Impact Visualization">
       <ResponsiveContainer width="100%" height={300}>
@@ -88,16 +85,15 @@ const ImpactVisualizer = () => {
   );
 };
 
-const MicrogridControl = () => {
+const MicrogridControl = ({ energyData }) => {
   const [gridStatus, setGridStatus] = useState("Stable");
-
   useEffect(() => {
     const interval = setInterval(() => {
-      const load = Math.random();
+      const load = energyData.length ? energyData.at(-1).energy / 100 : Math.random();
       setGridStatus(load > 0.8 ? "Overload" : "Stable");
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [energyData]);
 
   return (
     <Card title="Smart Microgrid Management">
@@ -106,16 +102,17 @@ const MicrogridControl = () => {
   );
 };
 
-const EmergencyAlerts = () => {
-  const [emergencyAlert, setEmergencyAlert] = useState("");
-
+const EmergencyAlerts = ({ energyData }) => {
+  const [emergencyAlert, setEmergencyAlert] = useState("All systems operational");
   useEffect(() => {
     const interval = setInterval(() => {
-      const alertTrigger = Math.random();
-      setEmergencyAlert(alertTrigger > 0.95 ? "High Energy Surge Detected!" : "All systems operational");
+      if (energyData.length) {
+        const alertTrigger = energyData.at(-1).energy / 100;
+        setEmergencyAlert(alertTrigger > 0.95 ? "High Energy Surge Detected!" : "All systems operational");
+      }
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [energyData]);
 
   return (
     <Card title="Solar-Powered Emergency Alerts">
@@ -124,18 +121,22 @@ const EmergencyAlerts = () => {
   );
 };
 
-const Dashboard = () => (
-  <div>
-    <EnergyTracker />
-    <Maintenance />
-    <ImpactVisualizer />
-    <MicrogridControl />
-    <EmergencyAlerts />
-  </div>
-);
+const Dashboard = () => {
+  const [energyData, setEnergyData] = useState([]);
+  return (
+    <div>
+      <EnergyTracker setEnergyData={setEnergyData} energyData={energyData} />
+      <Maintenance energyData={energyData} />
+      <ImpactVisualizer energyData={energyData} />
+      <MicrogridControl energyData={energyData} />
+      <EmergencyAlerts energyData={energyData} />
+    </div>
+  );
+};
 
 const SolarApp = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [energyData, setEnergyData] = useState([]);
   return (
     <Router>
       <div className="min-h-screen bg-gray-100 text-gray-800">
@@ -148,11 +149,11 @@ const SolarApp = () => {
           <div className="flex-1 p-6">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/energy-tracker" element={<EnergyTracker />} />
-              <Route path="/maintenance" element={<Maintenance />} />
-              <Route path="/impact-visualizer" element={<ImpactVisualizer />} />
-              <Route path="/microgrid-control" element={<MicrogridControl />} />
-              <Route path="/emergency-alerts" element={<EmergencyAlerts />} />
+              <Route path="/energy-tracker" element={<EnergyTracker setEnergyData={setEnergyData} energyData={energyData} />} />
+              <Route path="/maintenance" element={<Maintenance energyData={energyData} />} />
+              <Route path="/impact-visualizer" element={<ImpactVisualizer energyData={energyData} />} />
+              <Route path="/microgrid-control" element={<MicrogridControl energyData={energyData} />} />
+              <Route path="/emergency-alerts" element={<EmergencyAlerts energyData={energyData} />} />
             </Routes>
           </div>
         </div>
