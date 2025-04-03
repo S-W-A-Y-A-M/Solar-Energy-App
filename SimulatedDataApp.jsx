@@ -8,8 +8,8 @@ const Sidebar = ({ toggleSidebar }) => (
     <ul>
       <li className="mb-2"><Link to="/dashboard" className="block p-2 hover:bg-blue-600 rounded">Dashboard</Link></li>
       <li className="mb-2"><Link to="/energy-tracker" className="block p-2 hover:bg-blue-600 rounded">Energy Tracker</Link></li>
-      <li className="mb-2"><Link to="/maintenance" className="block p-2 hover:bg-blue-600 rounded">Maintenance</Link></li>
       <li className="mb-2"><Link to="/impact-visualizer" className="block p-2 hover:bg-blue-600 rounded">Impact Visualizer</Link></li>
+      <li className="mb-2"><Link to="/maintenance" className="block p-2 hover:bg-blue-600 rounded">Maintenance</Link></li>
       <li className="mb-2"><Link to="/microgrid-control" className="block p-2 hover:bg-blue-600 rounded">Microgrid Control</Link></li>
       <li className="mb-2"><Link to="/emergency-alerts" className="block p-2 hover:bg-blue-600 rounded">Emergency Alerts</Link></li>
     </ul>
@@ -46,24 +46,6 @@ const EnergyTracker = ({ setEnergyData, energyData }) => {
   );
 };
 
-const Maintenance = ({ energyData }) => {
-  const [maintenanceStatus, setMaintenanceStatus] = useState("All systems operational");
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const performance = energyData.length ? energyData.at(-1).energy : Math.random();
-      if (performance < 20) setMaintenanceStatus("Performance Degradation Detected!");
-      else setMaintenanceStatus("All systems operational");
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [energyData]);
-
-  return (
-    <Card title="Predictive Maintenance">
-      <p>{maintenanceStatus}</p>
-    </Card>
-  );
-};
-
 const ImpactVisualizer = ({ energyData }) => {
   const [impactData, setImpactData] = useState([]);
   useEffect(() => {
@@ -85,14 +67,39 @@ const ImpactVisualizer = ({ energyData }) => {
   );
 };
 
+const Maintenance = ({ energyData }) => {
+  const [maintenanceStatus, setMaintenanceStatus] = useState("All systems operational");
+
+  useEffect(() => {
+    if (energyData.length) {
+      const recentEnergy = energyData.map(item => item.energy);
+      const averageEnergy = recentEnergy.reduce((a, b) => a + b, 0) / recentEnergy.length;
+      if (averageEnergy < 20) setMaintenanceStatus("Performance Degradation Detected!");
+      else setMaintenanceStatus("All systems operational");
+    }
+  }, [energyData]);
+
+  return (
+    <Card title="Predictive Maintenance">
+      <p>{maintenanceStatus}</p>
+    </Card>
+  );
+};
+
 const MicrogridControl = ({ energyData }) => {
   const [gridStatus, setGridStatus] = useState("Stable");
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      const load = energyData.length ? energyData.at(-1).energy / 100 : Math.random();
-      setGridStatus(load > 0.8 ? "Overload" : "Stable");
-    }, 3000);
-    return () => clearInterval(interval);
+    const calculateGridStatus = () => {
+      if (energyData.length) {
+        const recentEnergy = energyData.map(item => item.energy);
+        const averageEnergy = recentEnergy.reduce((a, b) => a + b, 0) / recentEnergy.length;
+        if (averageEnergy > 80) setGridStatus("Overload");
+        else if (averageEnergy < 20) setGridStatus("Underutilized");
+        else setGridStatus("Stable");
+      }
+    };
+    calculateGridStatus();
   }, [energyData]);
 
   return (
@@ -126,8 +133,8 @@ const Dashboard = () => {
   return (
     <div>
       <EnergyTracker setEnergyData={setEnergyData} energyData={energyData} />
-      <Maintenance energyData={energyData} />
       <ImpactVisualizer energyData={energyData} />
+      <Maintenance energyData={energyData} />
       <MicrogridControl energyData={energyData} />
       <EmergencyAlerts energyData={energyData} />
     </div>
@@ -150,8 +157,8 @@ const SolarApp = () => {
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/energy-tracker" element={<EnergyTracker setEnergyData={setEnergyData} energyData={energyData} />} />
-              <Route path="/maintenance" element={<Maintenance energyData={energyData} />} />
               <Route path="/impact-visualizer" element={<ImpactVisualizer energyData={energyData} />} />
+              <Route path="/maintenance" element={<Maintenance energyData={energyData} />} />
               <Route path="/microgrid-control" element={<MicrogridControl energyData={energyData} />} />
               <Route path="/emergency-alerts" element={<EmergencyAlerts energyData={energyData} />} />
             </Routes>
